@@ -8,7 +8,7 @@ from artag_listener import ARTagListener
 
 ########################################################
 def getType(gameId):
-    types_of_games = {"Type1": ["dawsonschess"],
+    types_of_games = {"Type1": ["dawsonschess", "tictactoe"],
                       "Type4": ["3spot", "allqueenschess", "beeline", "change", "dao", "fivefieldkono", 
                                 "foxandhounds", "hareandhounds", "jan", "joust", "hobaggonu"],
                       "Type6": ["dinododgem", "dodgem"],

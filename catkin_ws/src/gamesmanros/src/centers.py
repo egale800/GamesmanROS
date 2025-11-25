@@ -24,12 +24,15 @@ def get_centers(game):
                 ],
         "dragonsandswans": [[(i % 4 * 10 + 5) / 35, (i // 4 * 10 + 5) / 46] for i in range(16)] + [[28.7/35, 43/46], [30.2/35, 43/46], [28.7/35, 46/46], [30.2/35, 46/46]],
         "jan": [[((i % 4)), ((i // 4))] for i in range(16)],
-        "joust": [[0.5,0.5],[1.5,0.5],[2.5,0.5],[3.5,0.5],[0.5,1.5],[1.5,1.5],[2.5,1.5],[3.5,1.5],[0.5,2.5],[1.5,2.5],[2.5,2.5],[3.5,2.5],[0.5,3.5],[1.5,3.5],[2.5,3.5],[3.5,3.5]]
+        "joust": [[0.5,0.5],[1.5,0.5],[2.5,0.5],[3.5,0.5],[0.5,1.5],[1.5,1.5],[2.5,1.5],[3.5,1.5],[0.5,2.5],[1.5,2.5],[2.5,2.5],[3.5,2.5],[0.5,3.5],[1.5,3.5],[2.5,3.5],[3.5,3.5]],
+        "tictactoe": [[x + 22 * (i % 3), y + 22 * (i // 3)] for i in range(9)]
     }
     return data[game] if game in data else None
 
 ar_tracker = {
-    "dodgem" : {"ar_marker_16" : 4, "ar_marker_13" : 8, "ar_marker_6" : 13, "ar_marker_7" : 14}
+    "dodgem" : {"ar_marker_16" : 4, "ar_marker_13" : 8, "ar_marker_6" : 13, "ar_marker_7" : 14},
+    "tictactoe": {"ar_marker_16" : 4, "ar_marker_13" : 8, "ar_marker_6" : 13, "ar_marker_7" : 14},
+    "dawsonschess": {"ar_marker_16" : 4, "ar_marker_13" : 8, "ar_marker_6" : 13, "ar_marker_7" : 14}
     }
 
 def get_dim(game):
@@ -40,7 +43,8 @@ def get_dim(game):
         "dao": 4,
         "dodgem": 3,
         "jan": 3,
-        "joust": 4
+        "joust": 4,
+        "tictactoe": 3
     }
     return data[game] if game in data else None
 
