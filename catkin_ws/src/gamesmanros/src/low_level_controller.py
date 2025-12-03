@@ -48,7 +48,6 @@ def plan_to_xyz(x, y, z):
     q12 = quaternion_multiply(q1, q2)
     q = quaternion_multiply(q12, q3)
 
-
     pose_goal.orientation.x = round(q[0], 6)
     pose_goal.orientation.y = round(q[1], 6)
     pose_goal.orientation.z = round(q[2], 6)
