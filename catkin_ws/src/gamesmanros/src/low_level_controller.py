@@ -22,6 +22,32 @@ group_name = "arm_group"  # Ensure this matches your MoveIt configuration
 move_group = moveit_commander.MoveGroupCommander(group_name)
 move_group.set_planner_id("LIN")
 
+def plan_to_xyz_position_only(x, y, z):
+    # Always start clean
+    move_group.clear_pose_targets()
+
+    # Make sure start state matches reality
+    move_group.set_start_state_to_current_state()
+
+    # Set ONLY the position target (no orientation constraint)
+    move_group.set_position_target([x, y, z])
+
+    plan = move_group.plan()
+
+    # MoveIt returns either a tuple or a RobotTrajectory depending on version
+    success = plan[0] if isinstance(plan, (list, tuple)) else True
+    traj = plan[1] if isinstance(plan, (list, tuple)) else plan
+
+    if not success:
+        rospy.logwarn("Position-only planning failed for XYZ.")
+        move_group.clear_pose_targets()
+        return False
+
+    move_group.execute(traj, wait=True)
+    rospy.loginfo("Position-only trajectory executed successfully.")
+    move_group.clear_pose_targets()
+    return True
+
 gripper = rospy.Publisher("/mycobot/gripper_status", MycobotGripperStatus, queue_size=10)
 
 # Function to move to a specified (x, y, z) position

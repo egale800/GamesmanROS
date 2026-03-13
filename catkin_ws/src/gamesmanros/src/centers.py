@@ -43,7 +43,11 @@ def get_dim(game):
         "dodgem": 3,
         "jan": 3,
         "joust": 4,
+<<<<<<< Updated upstream
         "4squaretictactoe": 4
+=======
+        "ponghauki":3
+>>>>>>> Stashed changes
     }
     return data[game] if game in data else None
 
