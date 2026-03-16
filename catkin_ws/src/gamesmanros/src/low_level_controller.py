@@ -3,7 +3,6 @@ import sys
 import rospy
 import moveit_commander
 import geometry_msgs.msg
-from moveit_commander.conversions import pose_to_list
 from tf.transformations import quaternion_from_euler, quaternion_multiply
 import time
 from mycobot_communication.msg import MycobotGripperStatus
@@ -11,103 +10,101 @@ from math import pi
 
 # Initialize MoveIt and ROS nodes
 moveit_commander.roscpp_initialize(sys.argv)
-# rospy.init_node("moveit_trajectory_planner", anonymous=True)
 
-# Initialize robot commander and scene interface
+# Initialize robot commander and MoveGroup
 robot = moveit_commander.RobotCommander()
-# scene = moveit_commander.PlanningSceneInterface()
-
-# Initialize MoveGroupCommander for your arm (replace 'arm_group' with your MoveGroup name if different)
-group_name = "arm_group"  # Ensure this matches your MoveIt configuration
+group_name = "arm_group"
 move_group = moveit_commander.MoveGroupCommander(group_name)
 move_group.set_planner_id("LIN")
 
-def plan_to_xyz_position_only(x, y, z):
-    # Always start clean
-    move_group.clear_pose_targets()
-
-    # Make sure start state matches reality
-    move_group.set_start_state_to_current_state()
-
-    # Set ONLY the position target (no orientation constraint)
-    move_group.set_position_target([x, y, z])
-
-    plan = move_group.plan()
-
-    # MoveIt returns either a tuple or a RobotTrajectory depending on version
-    success = plan[0] if isinstance(plan, (list, tuple)) else True
-    traj = plan[1] if isinstance(plan, (list, tuple)) else plan
-
-    if not success:
-        rospy.logwarn("Position-only planning failed for XYZ.")
-        move_group.clear_pose_targets()
-        return False
-
-    move_group.execute(traj, wait=True)
-    rospy.loginfo("Position-only trajectory executed successfully.")
-    move_group.clear_pose_targets()
-    return True
-
 gripper = rospy.Publisher("/mycobot/gripper_status", MycobotGripperStatus, queue_size=10)
 
-# Function to move to a specified (x, y, z) position
+
+def get_fixed_orientation():
+    """
+    Start simple: tool-down orientation only.
+    Once this works, you can add yaw/tilt back in.
+    """
+    q = quaternion_from_euler(pi, 0, 0)
+    return q
+
+    # Later, if needed, try this again:
+    # q1 = quaternion_from_euler(pi, 0, 0)       # tool down
+    # q2 = quaternion_from_euler(0, 0, pi/4)     # yaw
+    # q3 = quaternion_from_euler(-pi/16, 0, 0)   # slight tilt
+    # q12 = quaternion_multiply(q1, q2)
+    # q = quaternion_multiply(q12, q3)
+    # return q
+
+
 def plan_to_xyz(x, y, z):
-    current_state = robot.get_current_state()
-    move_group.set_start_state(current_state)
-    # move_group.set_start_state_to_current_state()
-    # move_group.setGoalPositionTolerance(0.01)
-    # move_group.setGoalOrientationTolerance(0.05)
-    # move_group.set_goal_position_tolerance(0.01)  # relaxed position tolerance (1 cm)
-    # move_group.set_goal_orientation_tolerance(0.05)  # relaxed orientation tolerance (~2-3 degrees)
+    # Always start from a clean planning state
+    move_group.stop()
+    move_group.clear_pose_targets()
+    move_group.clear_path_constraints()
+    move_group.set_start_state_to_current_state()
 
-
-    # Set up a Pose target at the desired location
+    # Build a fresh pose target
     pose_goal = geometry_msgs.msg.Pose()
     pose_goal.position.x = x
     pose_goal.position.y = y
     pose_goal.position.z = z
 
-    # Apply a 180-degree rotation around X-axis (downward)
-    q1 = quaternion_from_euler(pi, 0, 0)  # Pi radians (180 degrees) around X
-    q2 = quaternion_from_euler(0, 0, pi/4)
-    q3 = quaternion_from_euler(-pi/16, 0, 0)      # 45° about Y
-    q12 = quaternion_multiply(q1, q2)
-    q = quaternion_multiply(q12, q3)
+    q = get_fixed_orientation()
+    pose_goal.orientation.x = q[0]
+    pose_goal.orientation.y = q[1]
+    pose_goal.orientation.z = q[2]
+    pose_goal.orientation.w = q[3]
 
-    pose_goal.orientation.x = round(q[0], 6)
-    pose_goal.orientation.y = round(q[1], 6)
-    pose_goal.orientation.z = round(q[2], 6)
-    pose_goal.orientation.w = round(q[3], 6)
+    rospy.loginfo(
+        f"Planning to x={x:.4f}, y={y:.4f}, z={z:.4f}, "
+        f"quat=({q[0]:.4f}, {q[1]:.4f}, {q[2]:.4f}, {q[3]:.4f})"
+    )
 
-    # Set the target pose for the MoveGroup
+    # Set ONLY one pose target
     move_group.set_pose_target(pose_goal)
 
-    # Plan the trajectory to the target pose
-    plan = move_group.plan()
+    # Plan
+    plan_result = move_group.plan()
 
-    # Check if planning succeeded
-    if not plan[0]:
+    # Handle MoveIt return format differences
+    if isinstance(plan_result, tuple):
+        success, traj, planning_time, error_code = plan_result
+    else:
+        success = True
+        traj = plan_result
+
+    if not success or traj is None:
         rospy.logwarn("Planning failed for the target pose.")
+        move_group.clear_pose_targets()
         return False
 
-    move_group.execute(plan[1], wait=True)
+    # Execute
+    executed = move_group.execute(traj, wait=True)
+    move_group.stop()
+    move_group.clear_pose_targets()
+
+    if not executed:
+        rospy.logwarn("Execution failed.")
+        return False
+
     rospy.loginfo("Trajectory executed successfully.")
     return True
 
+
 def gripper_status(state):
-    gripper_states = {"open" : 1, "close" : 0}
-    gripper_status = MycobotGripperStatus()
-    gripper_status.Status = gripper_states[state]
-    gripper.publish(gripper_status)
-    gripper.publish(gripper_status)
+    gripper_states = {"open": 1, "close": 0}
+    msg = MycobotGripperStatus()
+    msg.Status = gripper_states[state]
+
+    # Keep your repeated publish behavior for now
+    for _ in range(2):
+        gripper.publish(msg)
     time.sleep(1)
-    gripper.publish(gripper_status)
-    gripper.publish(gripper_status)
+
+    for _ in range(2):
+        gripper.publish(msg)
     time.sleep(1)
-    gripper.publish(gripper_status)
-    gripper.publish(gripper_status)
-    gripper.publish(gripper_status)
-    gripper.publish(gripper_status)
-    gripper.publish(gripper_status)
-    gripper.publish(gripper_status)
-    gripper.publish(gripper_status)
+
+    for _ in range(7):
+        gripper.publish(msg)

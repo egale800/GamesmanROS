@@ -97,10 +97,8 @@ moves_data = requests.get(url=Dynamic_URL).json()['moves']
 
 game = games_data[user_game]["id"]
 gameType = getType(game)
-svg_space = variants_data["imageAutoGUIData"]["themes"]["regular"]["space"]
-print("svg_space: ", svg_space)
 
-robotControl = gameType(game=game, svg_space=svg_space, vision=vision)
+robotControl = gameType(game, vision)
 
 A_turn = True
 while (len(moves_data) > 0):
