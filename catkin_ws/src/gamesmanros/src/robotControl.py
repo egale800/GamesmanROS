@@ -307,28 +307,28 @@ class RobotControl:
         time.sleep(0.5)
 
 
-        flag = plan_to_xyz(x, y, self.lift_z)
+        flag = plan_to_xyz_position_only(x, y, self.lift_z)
         time.sleep(1)
-        flag = plan_to_xyz(x, y, z)
+        flag = plan_to_xyz_position_only(x, y, z)
         time.sleep(1)
-        flag = plan_to_xyz(x, y, z)
+        flag = plan_to_xyz_position_only(x, y, z)
         gripper_status("close")
         time.sleep(0.5)
         gripper_status("close")
     
-        flag = plan_to_xyz(x, y, self.lift_z)
+        flag = plan_to_xyz_position_only(x, y, self.lift_z)
         time.sleep(1)
-        flag = plan_to_xyz(after_x, after_y, self.lift_z)
+        flag = plan_to_xyz_position_only(after_x, after_y, self.lift_z)
         time.sleep(1)
-        flag = plan_to_xyz(after_x, after_y, after_z)
+        flag = plan_to_xyz_position_only(after_x, after_y, after_z)
         time.sleep(1)
-        flag = plan_to_xyz(after_x, after_y, after_z)
+        flag = plan_to_xyz_position_only(after_x, after_y, after_z)
 
         gripper_status("open")
         time.sleep(0.5)
         gripper_status("open")
 
-        flag = plan_to_xyz(after_x, after_y, self.lift_z)
+        flag = plan_to_xyz_position_only(after_x, after_y, self.lift_z)
         time.sleep(1)
             
         return flag
