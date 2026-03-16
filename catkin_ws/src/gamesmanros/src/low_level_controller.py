@@ -20,7 +20,7 @@ robot = moveit_commander.RobotCommander()
 # Initialize MoveGroupCommander for your arm (replace 'arm_group' with your MoveGroup name if different)
 group_name = "arm_group"  # Ensure this matches your MoveIt configuration
 move_group = moveit_commander.MoveGroupCommander(group_name)
-move_group.set_planner_id("LINa")
+move_group.set_planner_id("LIN")
 
 gripper = rospy.Publisher("/mycobot/gripper_status", MycobotGripperStatus, queue_size=10)
 
