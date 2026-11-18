@@ -33,12 +33,36 @@ Two things differ from the thesis:
       -> vote across N frames for stability
       -> publish /vision/board_state
 
-Piece tag IDs must not collide with corner_ids.
+Marker ID allocation (DICT_4X4_50 gives 50 IDs, 0-49)
+---------------------------------------------------
+    0-39    game pieces
+    40-45   spare
+    46-49   board corners: 46 TL, 47 TR, 48 BR, 49 BL
+
+Corners sit at the top of the dictionary so that piece IDs can be assigned
+from 0 upwards without ever colliding with them. The ROS 1 system put both in
+the low IDs and they overlapped.
+
+Two mappings, and only one of them belongs in configuration:
+
+  tag -> player    IS configuration. Which sticker is on which piece is
+                   physical ground truth; nothing can infer it and it cannot
+                   drift. Set p1_tag_ids / p2_tag_ids.
+
+  tag -> position  IS NOT. The ROS 1 _ar_tracker hardcoded this per game and
+                   mutated it after every move, so it desynced whenever a plan
+                   failed or a human touched the board. Here position is
+                   measured every frame, not remembered.
+
+When printing a new set of pieces, prefer ranges over enumerating IDs --
+0-19 for player one, 20-39 for player two. Then a new game needs no config at
+all: put the right-range sticker on the piece. The existing pieces predate
+this, so they are listed explicitly for now.
 
 Parameters
   camera_index      V4L index                               (default 0)
   game / variant    which board layout to fetch from UWAPI  (dodgem/regular)
-  corner_ids        4 marker IDs, order TL TR BR BL          (default [0,1,2,3])
+  corner_ids        4 marker IDs, order TL TR BR BL          (default [46,47,48,49])
   p1_tag_ids        tag IDs belonging to player one          (default [])
   p2_tag_ids        tag IDs belonging to player two          (default [])
   snap_radius       max distance (unit-square units) from a
@@ -71,7 +95,7 @@ class VisionNode(Node):
         self.declare_parameter('game', 'dodgem')
         self.declare_parameter('variant', 'regular')
         self.declare_parameter('snap_radius', 0.12)
-        self.declare_parameter('corner_ids', [0, 1, 2, 3])
+        self.declare_parameter('corner_ids', [46, 47, 48, 49])
         self.declare_parameter('p1_tag_ids', [])
         self.declare_parameter('p2_tag_ids', [])
         self.declare_parameter('stability_frames', 5)
@@ -92,8 +116,9 @@ class VisionNode(Node):
         overlap = (self._p1 | self._p2) & set(self._corners)
         if overlap:
             self.get_logger().error(
-                f'piece tags {sorted(overlap)} collide with corner_ids — '
-                f'the board corners will be read as pieces')
+                f'piece tags {sorted(overlap)} collide with corner_ids '
+                f'{self._corners} — those corners will be read as pieces. '
+                f'Corners are meant to live at 46-49; keep pieces at 0-39.')
 
         self._detector = cv2.aruco.ArucoDetector(
             cv2.aruco.getPredefinedDictionary(ARUCO_DICT),

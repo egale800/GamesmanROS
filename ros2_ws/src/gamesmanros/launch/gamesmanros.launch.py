@@ -134,8 +134,10 @@ def generate_launch_description():
             'variant':      variant_id,
             'snap_radius':  0.12,
             'debug_view':   False,
-            # TODO(calibrate): assign real tag IDs. These must not overlap
-            # corner_ids (default [0,1,2,3]) — see docs/MERGE-ISSUES.md.
+            # Marker IDs: 0-39 pieces, 46-49 board corners (see vision_node).
+            # TODO(calibrate): read the real IDs off the physical pieces and
+            # list them here. Reprint the four corner markers as 46-49.
+            'corner_ids':   [46, 47, 48, 49],
             'p1_tag_ids':   [],
             'p2_tag_ids':   [],
         }],
